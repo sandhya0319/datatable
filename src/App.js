@@ -4,10 +4,10 @@ import Displaystudent from './pages/students/components/Displaystudent';
 function App() {
   return (
     <div className="App">
-      <h1>hello</h1>
+      <h1>Students Information</h1>
       <BrowserRouter>
         <Routes>
-        <Route path="/student" element={<Displaystudent />} />
+        <Route path="/" element={<Displaystudent />} />
         </Routes>
       </BrowserRouter>
     </div>

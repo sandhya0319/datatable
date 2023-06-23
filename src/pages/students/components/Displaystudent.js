@@ -4,20 +4,21 @@ import DataTable from "react-data-table-component";
 
 const baseURL = "http://localhost:5454";
 const Displaystudent = () => {
-
   const [data, setData] = useState([]);
   const [totalRows, setTotalRows] = useState(1);
-  const options = [10, 20]
+  const options = [10, 20];
   const [perPage, setPerPage] = useState(options);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchUsers = async page => {
-    const response = await axios.get(`${baseURL}/student/displaydata/?page=${page}&limit=${perPage}`);
-    setData(response.data.rows);
-    setTotalRows(response.data.count);
-   
+  const fetchUsers = async (page) => {
+    const response = await axios.get(
+      `${baseURL}/student/displaydata/?page=${page}&limit=${perPage}`
+    );
+    //console.log(response.data,'response.data');
+    setData(response.data.Data);
+    setTotalRows(response.data.totalcount);
   };
-  //console.log(data,"displaydata")
+
   const handlePageChange = async (page) => {
     if (!searchQuery) {
       fetchUsers(page);
@@ -25,15 +26,18 @@ const Displaystudent = () => {
       const response = await axios.get(
         `${baseURL}/student/searchdata/${searchQuery}?page=${page}&limit=${perPage}`
       );
-      setData(response.data.rows);
-      setTotalRows(response.data.count);
+      setData(response.data.Data);
+      setTotalRows(response.data.totalcount);
     }
   };
 
   const handlePerRowsChange = async (newPerPage, page) => {
-    const response = await axios.get(`${baseURL}/student/displaydata/?page=${page}&limit=${newPerPage}`);
-    setData(response.data.rows);
+    const response = await axios.get(
+      `${baseURL}/student/displaydata/?page=${page}&limit=${newPerPage}`
+    );
     setPerPage(newPerPage);
+    setData(response.data.Data);
+    setTotalRows(response.data.totalcount);
   };
 
   const handleSearch = (event) => {
@@ -46,78 +50,83 @@ const Displaystudent = () => {
     const response = await axios.get(
       `${baseURL}/student/searchdata/${searchQuery}?page=1&limit=${perPage}`
     );
-    //console.log(response.data.rows,"dataasearch")
-    setData(response.data.rows);
-    setTotalRows(response.data.count);
+   // console.log(response.data, "servhh");
+    setData(response.data.searchData);
+    setTotalRows(response.data.totalcount);
   };
 
   useEffect(() => {
-    fetchUsers(1); 
+    fetchUsers(1);
   }, []);
-  console.log(data,"alldata")
+  //console.log(data, "alldata")
   const columns = [
     {
-      name: "id",
-      selector: (row) => row.id,
+      name: "Id",
+      selector: "id",
       sortable: true,
-      sortField: 'id',
+      //sortField: "id",
     },
     {
-      name: "firstname",
-      selector: (row) => row.student.firstname,
+      name: "Firstname",
+      selector: "firstname",
       sortable: true,
-      //sortField: 'firstname',
+      //sortField: "firstname",
     },
     {
-      name: "lastname",
-      selector: (row) => row.student.lastname,
+      name: "Lastname",
+      selector: "lastname",
       sortable: true,
-      //sortField: 'firstname',
+      //sortField: "lastname",
     },
     {
-      name: "title",
-      selector: (row) => row.course.title,
+      name: "Phone",
+      selector: "phone",
       sortable: true,
-      sortField: 'title',
+      //sortField: "phone",
     },
-    // {
-    //   name: "firstname",
-    //   selector: (row) => row.firstname,
-    //   sortable: true,
-    // },
-    // {
-    //   name: "lastname",
-    //   selector: (row) => row.lastname,
-    //   sortable: true,
-    // },
-    // {
-    //   name: "phone",
-    //   selector: (row) => row.phone,
-    //   sortable: true,
-    // },
   ];
+  const ExpandedComponent = ({ data }) => {
+    if (data && data.enrollments.length > 0) {
+      return (
+        <div>
+          {data.enrollments.map((enrollment) => (
+            <div key={enrollment.id}>
+              <h3>Enrolled Course: {enrollment.course.title}</h3>
+              <p>Professor: {enrollment.course.professor.name}</p>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      return <p>No enrollment in any course</p>;
+    }
+  };
 
-  const ExpandedComponent = ({ data }) => <pre>{JSON.stringify(data, null,3)}</pre>;
+  const handleSort = async (column, sortDirection) => {
+    try {
+      const response = await axios.get(
+        `${baseURL}/student/handleSort/?column=${column}&sortDirection=${sortDirection}&page=1&limit=${perPage}`
+      );
+      console.log("Sorted data", response.data)
+      setData(response.data.searchData);
+      setTotalRows(response.data.totalcount);
+    } catch (error) {
+      console.error("Error handling sort:", error);
+    }
+  };
 
-  // sorting
-  //const [data, setData] = useState(data);
-
-    const handleSort = async (column, sortDirection) => {
-    /// reach out to some API and get new data using or sortField and sortDirection
-    // e.g. https://api.github.com/search/repositories?q=blog&sort=${column.sortField}&order=${sortDirection}
-
-      //setData(remoteData);
-    };
-
-  
   return (
     <div>
       <form onSubmit={handleSearchSubmit}>
-        <input type="text" value={searchQuery} onChange={handleSearch} placeholder="Search..." />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearch}
+          placeholder="Search..."
+        />
         <button type="submit">Search</button>
       </form>
       <DataTable
-        title="Users"
         columns={columns}
         data={data}
         pagination
@@ -126,12 +135,13 @@ const Displaystudent = () => {
         paginationTotalRows={totalRows}
         onChangeRowsPerPage={handlePerRowsChange}
         onChangePage={handlePageChange}
-        expandableRows expandableRowsComponent={ExpandedComponent}
-        onSort={handleSort}
+        expandableRows
+        expandableRowsComponent={ExpandedComponent}
+        onSort={(column, sortDirection) => handleSort(column.selector || column.name, sortDirection)}
         sortServer
       />
     </div>
   );
-}
+};
 
-export default Displaystudent
+export default Displaystudent;
